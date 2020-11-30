@@ -3,6 +3,7 @@ package services;
 import dataaccess.UserDB;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import models.User;
@@ -33,5 +34,36 @@ public class AccountService {
         }
         
         return null;
+    }
+    
+    public void resetPassword(String email, String path, String url) throws Exception {
+        UserDB ub = new UserDB();
+        
+        User user = ub.get(email);
+        String id = UUID.randomUUID().toString();
+        user.setResetPasswordUuid(id);
+        ub.update(user);
+        
+        String subject = "Password Reset";
+        String template = path + "/emailtemplates/resetpassword.html";
+        String link = url + "?uuid=" + id;
+        
+        HashMap<String, String> tags = new HashMap<>();
+        tags.put("firstname", user.getFirstName());
+        tags.put("lastname", user.getLastName());
+        tags.put("link", link);
+        
+        GmailService.sendMail(email, subject, template, tags);
+    }
+    
+    public boolean changePassword(String id, String pass) {
+        UserDB ub = new UserDB();
+        
+        User user = ub.getByUUID(id);
+        user.setPassword(pass);
+        user.setResetPasswordUuid(null);
+        ub.update(user);
+        return true;
+        
     }
 }
